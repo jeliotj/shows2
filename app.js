@@ -30,17 +30,22 @@ async function createCronJob(show) {
     const currentShow = show[0]
     const showTime = new Date(currentShow.start)
     const cronTime = {
+      // Minute and hour start at 0 in cron; month and day-of-month at 1.
       minute: showTime.getMinutes(),
       hour: showTime.getHours(),
       dayOfMonth: showTime.getDate(),
-      month: showTime.getMonth() + 1,
+      month: showTime.getMonth() + 1, // getMonth() is zero-based
     }
+    try {
     const task = await createTask(
       currentShow.duration,
       currentShow.title,
       cronTime.month,
       cronTime.dayOfMonth
     )
+    } catch (error) {
+
+    }
     const options = {
       timezone: 'America/Denver',
       maxExecutions: 1,
@@ -57,12 +62,15 @@ async function createCronJob(show) {
 
 async function createTask(duration, title, month, dom) {
   try {
+    // Build a cleaned up filename like "ShowName-Month-DayOfMonth"
     const fileName = title
       .trim()
       .replace(/[^a-zA-Z0-9]/g, '')
-      .concat(`-${month}-${dom}`)
+      .concat(`-${month}-${dom}.js`)
+    const fullPath = `./tasks/${fileName}`
 
     const args = `[
+      '-t', duration,
       '-i', '${process.env.STREAM_URL}',
       '-c:a', 'copy',
       '-vn',
@@ -75,7 +83,11 @@ async function createTask(duration, title, month, dom) {
       spawn('ffmpeg', ${args})
     }
   `
-    const fullPath = `./tasks/${fileName}.js`
+    const tasksDir = await fs.readdir('./tasks/')
+    if (tasksDir.some((element) => element == fileName)) {
+      throw Error("File already exists")
+    }
+
     await fs.writeFile(fullPath, taskFunc, 'utf8')
     return fullPath
   } catch (error) {
