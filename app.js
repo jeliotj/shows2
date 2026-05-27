@@ -68,6 +68,9 @@ async function createCronJob(show) {
 }
 
 export function createCleanFilename(title, month, dom) {
+    if (title === '' || title === undefined) {
+      throw Error("Title is empty")
+    }
   const cleanName = title
     .trim()
     .replace(/[^a-zA-Z0-9]/g, '')
