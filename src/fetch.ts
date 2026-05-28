@@ -1,6 +1,8 @@
 import type { ApiResponse } from './types.js'
+import { logger } from './log.js'
 
 export async function getUpcomingShows(number: string): Promise<ApiResponse> {
+  logger.info('Getting upcoming shows...')
   const params = new URLSearchParams()
   params.append('count', number)
   try {

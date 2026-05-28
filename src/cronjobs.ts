@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import cron from 'node-cron'
-import { logError, debug } from './log.js'
+import { logger } from './log.js'
 import type { Show, Args } from './types.js'
 
 export function createCronTime(show: Show) {
@@ -42,12 +42,12 @@ export async function createCronJob(show: Show) {
         task: task,
         cron: (nextScheduledTask as any).cronExpression,
       }
-      debug('Show Recording Scheduled', debugData)
+      logger.info({ task: task, cron: (nextScheduledTask as any).cronExpression }, 'show recording scheduled')
     } catch (error) {
-      if (error instanceof Error) logError(error)
+      if (error instanceof Error) logger.error({ error })
     }
   } catch (error) {
-    if (error instanceof Error) logError(error)
+    if (error instanceof Error) logger.error({ error })
   }
 }
 
@@ -85,15 +85,13 @@ async function createTask(
 
     const taskFunc = `
   import { spawn } from 'node:child_process'
-    console.log('task file loaded')
     export function task() {
-      console.log('task() called')
       const ffmpeg = spawn('ffmpeg', ['-t', '${args.timeout}','-i', '${args.input}','-c:a', 'copy','-vn','${args.output}'])
 
-      ffmpeg.stdout.on('data', (data) => console.log('ffmpeg stdout:', data.toString()))
-      ffmpeg.stderr.on('data', (data) => console.error('ffmpeg stderr:', data.toString()))
-      ffmpeg.on('close', (code) => console.log('ffmpeg exited with code:', code))
-      ffmpeg.on('error', (err) => console.error('ffmpeg error:', err.message))
+      ffmpeg.stdout.on('data', (data) => logger.debug('ffmpeg stdout:', data.toString()))
+      ffmpeg.stderr.on('data', (data) => logger.error('ffmpeg stderr:', data.toString()))
+      ffmpeg.on('close', (code) => logger.debug('ffmpeg exited with code:', code))
+      ffmpeg.on('error', (err) => logger.error('ffmpeg error:', err.message))
     }
   `
     const tasksDir = await fs.readdir(process.env.TASKS_DIR)
@@ -104,6 +102,6 @@ async function createTask(
     await fs.writeFile(fullPath, taskFunc, 'utf8')
     return fullPath
   } catch (error) {
-    if (error instanceof Error) logError(error)
+    if (error instanceof Error) logger.error({error})
   }
 }
