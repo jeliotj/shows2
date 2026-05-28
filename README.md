@@ -1,10 +1,10 @@
 # Shows 2
 
-Shows records shows scheduled with the [Spinitron](https://spinitron.com).
+Shows 2 records radio programs scheduled with the [Spinitron](https://spinitron.com) calendar.
 
 ## Features
 
-  - Allows station managers to only maintain a single source of truth (SSOT)
+  - Allows station managers to maintain a single source of truth (SSOT)
   - Maintains a detailed log of recording details
   - Fully customizable recording location allows stations to preserve recordings indefinitely
 
