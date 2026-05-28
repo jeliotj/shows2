@@ -8,3 +8,5 @@ dist/
 tsconfig*
 
 src/test-cron.js
+
+.prettierrc
