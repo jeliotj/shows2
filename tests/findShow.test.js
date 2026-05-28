@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { findNextShow } from '../app.js'
+import { findNextShow } from '../dist/app.js'
 
 test('returns next show when array includes past, next, and future', () => {
   const shows = [

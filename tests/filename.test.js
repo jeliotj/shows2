@@ -1,4 +1,4 @@
-import { createCleanFilename } from '../app.js'
+import { createCleanFilename } from '../dist/app.js'
 import { test, expect } from 'vitest'
 
 test('removes special characters from filename', () => {
