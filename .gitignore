@@ -10,3 +10,5 @@ tsconfig*
 src/test-cron.js
 
 .prettierrc
+
+shows.db

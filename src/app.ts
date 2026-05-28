@@ -2,7 +2,10 @@ import 'dotenv/config'
 import { getUpcomingShows } from './fetch.js'
 import { createCronJob } from './cronjobs.js'
 import { logger } from './log.js'
+import { saveShows, getNextShowFromDb } from './queries.js'
 import type { Show } from './types.js'
+
+const NUMBER_OF_SHOWS = '3'
 
 export function findNextShow(showArray: Show[]): Show | null {
   return (
@@ -15,21 +18,18 @@ export function findNextShow(showArray: Show[]): Show | null {
 async function main() {
   logger.info('Starting the app...')
 
-  const upcoming = await getUpcomingShows('3')
+  const upcoming = await getUpcomingShows(NUMBER_OF_SHOWS)
+  saveShows(upcoming.items)
 
-  const shows: Show[] = upcoming.items?.map(({ title, start, duration }) => ({
-    title,
-    start,
-    duration,
-  }))
-
-  const nextShow = findNextShow(shows)
+  const nextShow = getNextShowFromDb()
+  console.log(nextShow);
 
   if (!nextShow) {
     logger.error('Next show not found')
     return
   }
-  createCronJob(nextShow)
+
+  // createCronJob(nextShow)
 }
 
 main()
