@@ -6,3 +6,5 @@ node_modules/
 dist/
 
 tsconfig*
+
+src/test-cron.js

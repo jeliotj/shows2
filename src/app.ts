@@ -43,7 +43,7 @@ export function createCronTime(show: Show) {
   return { cronTime, cronString }
 }
 
-async function createCronJob(show: Show) {
+export async function createCronJob(show: Show) {
   try {
     const currentShow = show
 
@@ -60,7 +60,7 @@ async function createCronJob(show: Show) {
 
       const options = {
         timezone: 'America/Denver',
-        maxExecutions: 1,
+        //maxExecutions: 1,
       }
       const nextScheduledTask = cron.schedule(cronString, task, options)
       const debugData = {
@@ -95,25 +95,26 @@ async function createTask(duration: number, title: string, month: number, dom: n
     if (!process.env.TASKS_DIR) throw new Error('TASKS_DIR is not set')
     const fullPath = path.join(process.env.TASKS_DIR, fileName)
     const durationStr = duration.toString()
+    if (!process.env.RECORDINGS_DIR) throw new Error('RECORDINGS_DIR is not set')
+    const recordingsDir = path.join(process.env.RECORDINGS_DIR, fileName)
 
     const args: Args = {
       timeout: durationStr,
       input: `${process.env.STREAM_URL}`,
-      output: `${fileName}.${process.env.STREAM_CODEC}`
+      output: `${recordingsDir}.${process.env.STREAM_CODEC}`
     }
-
-    const argString = `[
-      '-t', '${args.timeout}',
-      '-i', '${args.input}',
-      '-c:a', 'copy',
-      '-vn',
-      '${args.output}'
-    ]`
 
     const taskFunc = `
   import { spawn } from 'node:child_process'
+    console.log('task file loaded')
     export function task() {
-      spawn('ffmpeg', ${argString})
+      console.log('task() called')
+      const ffmpeg = spawn('ffmpeg', ['-t', '${args.timeout}','-i', '${args.input}','-c:a', 'copy','-vn','${args.output}'])
+
+      ffmpeg.stdout.on('data', (data) => console.log('ffmpeg stdout:', data.toString()))
+      ffmpeg.stderr.on('data', (data) => console.error('ffmpeg stderr:', data.toString()))
+      ffmpeg.on('close', (code) => console.log('ffmpeg exited with code:', code))
+      ffmpeg.on('error', (err) => console.error('ffmpeg error:', err.message))
     }
   `
     const tasksDir = await fs.readdir(process.env.TASKS_DIR)
