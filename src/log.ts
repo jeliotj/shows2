@@ -1,5 +1,4 @@
-
-export function logError(error: Error, message="", debugLevel='ERROR') {
+export function logError(error: Error, message = '', debugLevel = 'ERROR') {
   const now = new Date()
   const time = now.toLocaleTimeString()
   const date = now.toLocaleDateString()

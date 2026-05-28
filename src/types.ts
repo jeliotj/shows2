@@ -9,9 +9,7 @@ export type ApiResponse = {
 }
 
 export type Args = {
-  timeout: string,
-  input: string,
+  timeout: string
+  input: string
   output: string
 }
-
-

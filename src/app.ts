@@ -4,7 +4,6 @@ import { createCronJob } from './cronjobs.js'
 import { logError, debug } from './log.js'
 import type { Show } from './types.js'
 
-
 const NUMBER_OF_SHOWS = '3'
 
 async function main() {
@@ -27,7 +26,5 @@ export function findNextShow(showArray: Show[]): Show | null {
       .find((show) => +new Date(show.start) > Date.now()) ?? null
   )
 }
-
-
 
 main()

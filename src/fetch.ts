@@ -15,7 +15,7 @@ export async function getUpcomingShows(number: string): Promise<ApiResponse> {
     if (!response.ok) {
       throw new Error(`Response status: ${response.status}`)
     }
-    const data = await response.json() as ApiResponse
+    const data = (await response.json()) as ApiResponse
     return data
   } catch (error) {
     if (error instanceof Error) throw error
