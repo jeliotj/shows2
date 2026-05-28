@@ -1,4 +1,4 @@
-import { createCronJob } from './app.js'
+import { createCronJob } from './cronjobs.js'
 
 const soon = new Date(Date.now() + 120 * 1000)
 
