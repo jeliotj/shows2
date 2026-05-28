@@ -1,0 +1,143 @@
+import 'dotenv/config'
+import { getUpcomingShows } from './fetch.js'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import cron from 'node-cron'
+import type { Show, Args } from './types.js'
+
+const NUMBER_OF_SHOWS = '3'
+
+async function main() {
+  const upcoming = await getUpcomingShows(NUMBER_OF_SHOWS)
+  const shows: Show[] = upcoming.items?.map(({ title, start, duration }) => ({
+    title,
+    start,
+    duration,
+  }))
+
+  const nextShow = findNextShow(shows)
+  if (!nextShow) return
+  createCronJob(nextShow)
+}
+
+export function findNextShow(showArray: Show[]): Show | null {
+  return (
+    showArray
+      .sort((a, b) => +new Date(a.start) - +new Date(b.start))
+      .find((show) => +new Date(show.start) > Date.now()) ?? null
+  )
+}
+
+export function createCronTime(show: Show) {
+  const showTime = new Date(show.start)
+  const cronTime = {
+    // Minute and hour start at 0 in cron; month and day-of-month at 1.
+    minute: showTime.getMinutes(),
+    hour: showTime.getHours(),
+    dayOfMonth: showTime.getDate(),
+    month: showTime.getMonth() + 1, // getMonth() is zero-based
+  }
+  const cronString = 
+    `${cronTime.minute} ${cronTime.hour} ${cronTime.dayOfMonth} ${cronTime.month} *`
+
+  return { cronTime, cronString }
+}
+
+async function createCronJob(show: Show) {
+  try {
+    const currentShow = show
+
+    const { cronTime, cronString } = createCronTime(currentShow)
+
+    try {
+      const task = await createTask(
+        currentShow.duration,
+        currentShow.title,
+        cronTime.month,
+        cronTime.dayOfMonth
+      )
+      if (!task) throw Error("No task created")
+
+      const options = {
+        timezone: 'America/Denver',
+        maxExecutions: 1,
+      }
+      const nextScheduledTask = cron.schedule(cronString, task, options)
+      const debugData = {
+        task: task,
+        cron: (nextScheduledTask as any).cronExpression
+      }
+      debug('Show Recording Scheduled', debugData)
+      
+    } catch (error) {
+      if (error instanceof Error) logError(error)
+    }
+
+  } catch (error) {
+    if (error instanceof Error) logError(error)
+  }
+}
+
+export function createCleanFilename(title: string, month: number, dom: number) {
+    if (title === '' || title === undefined) {
+      throw Error("Title is empty")
+    }
+  const cleanName = title
+    .trim()
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .concat(`-${month}-${dom}.js`)
+  return cleanName
+}
+
+async function createTask(duration: number, title: string, month: number, dom: number) {
+  try {
+    const fileName = createCleanFilename(title, month, dom)
+    if (!process.env.TASKS_DIR) throw new Error('TASKS_DIR is not set')
+    const fullPath = path.join(process.env.TASKS_DIR, fileName)
+    const durationStr = duration.toString()
+
+    const args: Args = {
+      timeout: durationStr,
+      input: `${process.env.STREAM_URL}`,
+      output: `${fileName}.${process.env.STREAM_CODEC}`
+    }
+
+    const argString = `[
+      '-t', '${args.timeout}',
+      '-i', '${args.input}',
+      '-c:a', 'copy',
+      '-vn',
+      '${args.output}'
+    ]`
+
+    const taskFunc = `
+  import { spawn } from 'node:child_process'
+    export function task() {
+      spawn('ffmpeg', ${argString})
+    }
+  `
+    const tasksDir = await fs.readdir(process.env.TASKS_DIR)
+    if (tasksDir.some((element) => element == fileName)) {
+      throw Error('File already exists')
+    }
+
+    await fs.writeFile(fullPath, taskFunc, 'utf8')
+    return fullPath
+  } catch (error) {
+    if (error instanceof Error) logError(error)
+  }
+}
+
+function logError(error: Error, message="", debugLevel='ERROR') {
+  const now = new Date()
+  const time = now.toLocaleTimeString()
+  const date = now.toLocaleDateString()
+
+  console.error(`[${date}-${time}]`, debugLevel, message, error.message)
+}
+
+function debug(label: string, data: unknown) {
+  console.log(`[DEBUG] ${label}:`, data)
+}
+
+main()
